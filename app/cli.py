@@ -3,7 +3,7 @@ import sys
 import typer
 from rich.prompt import Prompt
 from typing import Optional
-
+import shlex
 from app.config import load_settings
 from app.yahoo_client import YahooClient
 from app.repo import Repo
@@ -21,9 +21,115 @@ app = typer.Typer(help="Fantasy AI CLI")
 def _print_commands():
     console.print(
         "Commands: "
+        "[bold]available[/], "  # <-- add
         "[bold]lineup[/], [bold]waivers[/], [bold]draft[/], "
         "[bold]ping[/], [bold]help[/], [bold]quit[/]"
     )
+
+def _available_usage():
+    console.print(
+        "[bold]available[/] — list free agents + waivers\n"
+        "  Options:\n"
+        "    --pos QB|RB|WR|TE|DEF|K    filter by position\n"
+        "    --search TEXT               name substring\n"
+        "    --sort AR|POWN|NAME         sort (default AR)\n"
+        "    --limit N                   max rows (e.g. 30)\n"
+        "    --no-waivers                exclude players on waivers\n"
+        "    --jsonl                     output JSON lines\n"
+        "\nExamples:\n"
+        "  available\n"
+        "  available --pos RB --limit 30\n"
+        "  available --search smith --sort POWN\n"
+    )
+def _handle_available(y, argv: str):
+    """
+    Parse and execute: available [--pos POS] [--search TEXT] [--sort AR|POWN|NAME] [--limit N] [--no-waivers] [--jsonl]
+    """
+    # Tokenize the rest of the line after 'available'
+    tokens = shlex.split(argv)
+    pos = None
+    search = None
+    sort = "AR"
+    limit = None
+    include_waivers = True
+    jsonl = False
+
+    i = 0
+    while i < len(tokens):
+        t = tokens[i]
+        # flags with value
+        if t in ("--pos", "-p"):
+            i += 1; pos = tokens[i] if i < len(tokens) else None
+        elif t.startswith("--pos="):
+            pos = t.split("=", 1)[1]
+        elif t == "--search":
+            i += 1; search = tokens[i] if i < len(tokens) else None
+        elif t.startswith("--search="):
+            search = t.split("=", 1)[1]
+        elif t == "--sort":
+            i += 1; sort = (tokens[i] if i < len(tokens) else sort).upper()
+        elif t.startswith("--sort="):
+            sort = t.split("=", 1)[1].upper()
+        elif t == "--limit":
+            i += 1
+            try:
+                limit = int(tokens[i]) if i < len(tokens) else None
+            except Exception:
+                limit = None
+        # boolean flags
+        elif t == "--no-waivers":
+            include_waivers = False
+        elif t == "--jsonl":
+            jsonl = True
+        # help
+        elif t in ("-h", "--help"):
+            _available_usage()
+            return
+        else:
+            # allow shorthand like: available RB
+            if pos is None and t.upper() in ("QB","RB","WR","TE","DEF","K"):
+                pos = t.upper()
+            else:
+                console.print(f"[yellow]Warning:[/yellow] ignoring unknown option '{t}'")
+        i += 1
+
+    try:
+        rows = []
+        for p in y.available_players(
+            position=pos,
+            include_waivers=include_waivers,
+            search=search,
+            sort=sort,
+            limit=limit,
+        ):
+            rows.append({
+                "Player": p["name"],
+                "Pos": p["pos"],
+                "Elig": ",".join(p["elig"] or []),
+                "Team": p["team"],
+                "Bye": p["bye"],
+                "%Own": p["%owned"],
+                "Stat": p["stat"],
+                "Inj": (p["inj"] or "")[:20] if p.get("inj") else "",
+                "Avail": p.get("avail", "FA"),
+                "ID": p["player_id"],
+            })
+
+        if jsonl:
+            for r in rows:
+                console.print_json(data=r)
+        else:
+            if not rows:
+                print_warn("No available players found with the given filters.")
+            else:
+                cols = ["Player", "Pos", "Elig", "Team", "Bye", "%Own", "Stat", "Inj", "Avail", "ID"]
+                console.print(simple_table("Available Players", cols, rows))
+                print_success(
+                    f"Shown: {len(rows)} "
+                    f"(pos={pos or 'ANY'}, sort={sort}, waivers={'on' if include_waivers else 'off'})"
+                )
+    except Exception as e:
+        print_error(f"Available error:\n{yahoo_error_to_str(e)}")
 
 
 @app.command("run")
@@ -75,6 +181,11 @@ def run_command():
 
         if low in ("help", "?"):
             _print_commands()
+            continue
+        if low.startswith("available"):
+            # pass the raw text (minus the command keyword) to the handler
+            after = q[len("available"):].strip()
+            _handle_available(y, after)
             continue
 
         if low in ("ping", "health", "check"):
