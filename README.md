@@ -25,7 +25,7 @@ python -m venv venv
 
 source venv/bin/activate   # Mac/Linux
 
-venv\Scripts\activate      # Windows
+call venv\Scripts\activate      # Windows
 
 pip install -r requirements.txt 
 
@@ -43,12 +43,10 @@ pip install -r requirements.txt
 ## Run the CLI:
 
 ```bash
-Copy code
 python -m app.cli run
 ```
 Commands
 ```bash
-Copy code
 # Fetch league standings
 python -m app.cli standings
 ```
