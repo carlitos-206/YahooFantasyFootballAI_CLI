@@ -16,12 +16,19 @@ This tool connects to your Yahoo league, fetches live data, and provides command
 ## Installation
 
 ```bash
+
 git clone https://github.com/yourusername/FantasyFootballAI.git
+
 cd FantasyFootballAI
+
 python -m venv venv
+
 source venv/bin/activate   # Mac/Linux
+
 venv\Scripts\activate      # Windows
+
 pip install -r requirements.txt 
+
 ```
 
 ## Setup
