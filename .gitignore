@@ -1,0 +1,67 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+develop-eggs/
+.installed.cfg
+*.manifest
+*.spec
+
+# --- Virtual Environment ---
+.venv/
+venv/
+ENV/
+env/
+.env
+.venv*/
+venv*/
+pip-wheel-metadata/
+
+# --- IDE / Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Logs / Caches ---
+*.log
+*.tmp
+*.cache
+*.pid
+*.cover
+.coverage
+.coverage.*
+.cache/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb
+
+# --- Project Specific ---
+# OAuth tokens / secrets
+data/yahoo_oauth.json
+notes.txt
+
+# Scheduler state
+*.db
+*.sqlite
+
+# CLI history
+.python_history
